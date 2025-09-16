@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ItachiGPT — Shinobi Coding Tutor</title>
+  <meta name="color-scheme" content="dark">
+  <style>
+    :root{
+      --bg:#0a0a0b;
+      --panel:#111216;
+      --panel-2:#0e0f13;
+      --ink:#e6e6ea;
+      --muted:#a7a7b0;
+      --crimson:#b9042c;
+      --crimson-2:#7f0320;
+      --steel:#1a2a3a;
+      --outline:#272a33;
+      --ring: rgba(185,4,44,.35);
+      --glow: 0 0 0 1px rgba(185,4,44,.40), 0 0 32px rgba(185,4,44,.15), inset 0 0 0 1px rgba(185,4,44,.15);
+      --radius: 16px;
+    }
+
+    /* Background: subtle animated "crimson eye" motif */
+    body{
+      margin:0; color:var(--ink); background: var(--bg);
+      font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100vh; position:relative; overflow:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:-20vmax;
+      background:
+        radial-gradient(60vmax 60vmax at 75% -10%, rgba(185,4,44,.08), transparent 55%),
+        radial-gradient(40vmax 40vmax at 12% 110%, rgba(185,4,44,.06), transparent 60%),
+        radial-gradient(120vmax 120vmax at 50% 0%, rgba(255,255,255,.03), transparent 60%);
+      filter: saturate(120%);
+      animation: breathe 12s ease-in-out infinite;
+      z-index:0;
+    }
+    @keyframes breathe{
+      0%,100%{ transform: scale(1); opacity:.9; }
+      50%{ transform: scale(1.03); opacity:1; }
+    }
+
+    header{
+      position:relative; z-index:2;
+      padding:18px 22px;
+      background: linear-gradient(180deg, rgba(185,4,44,.18), rgba(185,4,44,.08) 40%, transparent);
+      border-bottom:1px solid rgba(185,4,44,.25);
+      backdrop-filter: blur(6px);
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 0 16px; }
+
+    .brand{
+      display:flex; align-items:center; gap:14px;
+    }
+    .crest{
+      width:38px; height:38px; border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 55%, rgba(255,255,255,.12), transparent 40%),
+        radial-gradient(closest-side, rgba(185,4,44,.9), rgba(185,4,44,.65) 60%, rgba(185,4,44,.2) 85%, transparent);
+      box-shadow: var(--glow);
+      position:relative; overflow:hidden;
+    }
+    .crest::after{
+      /* a minimalist rotating ring; no logos, just vibes */
+      content:""; position:absolute; inset:6px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:50%;
+      animation: spin 14s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h1{ margin:0; font-size:1.15rem; letter-spacing:.4px; }
+    .sub{ color:var(--muted); font-size:.9rem; margin-top:2px; }
+
+    main{
+      position:relative; z-index:1;
+      max-width: 980px; margin: 16px auto 0; padding: 0 16px 24px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border:1px solid var(--outline);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: 0 10px 40px rgba(0,0,0,.45);
+      overflow: clip;
+      display:flex; flex-direction:column; min-height: 72vh;
+    }
+
+    .chat{
+      padding: 18px; overflow:auto; flex:1;
+      scrollbar-width: thin; scrollbar-color: rgba(185,4,44,.35) transparent;
+    }
+    .chat::-webkit-scrollbar{ height:10px; width:10px; }
+    .chat::-webkit-scrollbar-thumb{ background: rgba(185,4,44,.35); border-radius:8px; }
+    .chat::-webkit-scrollbar-track{ background: transparent; }
+
+    .bubble{
+      padding: 12px 14px; border-radius: 14px;
+      margin: 10px 0; max-width: 78%; line-height: 1.55; white-space: pre-wrap;
+      border: 1px solid var(--outline);
+    }
+    .assistant{
+      background: #0e0f14;
+      border-color: rgba(185,4,44,.25);
+      box-shadow: 0 0 0 1px rgba(185,4,44,.12) inset, 0 0 24px rgba(185,4,44,.08);
+    }
+    .assistant .tag{
+      display:inline-block; font-size:.75rem; color: var(--muted);
+      border:1px solid rgba(185,4,44,.35); border-radius:999px; padding:2px 8px; margin-bottom:6px;
+    }
+    .user{
+      background: #0f1620;
+      border-color: #273240;
+      margin-left:auto;
+      box-shadow: 0 6px 20px rgba(0,0,0,.35);
+    }
+
+    .composer{
+      border-top:1px solid var(--outline);
+      padding: 12px; background: #0b0c10;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .quick{
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .chip{
+      padding:8px 10px; border-radius:999px; font-size:.85rem; cursor:pointer;
+      border:1px solid rgba(185,4,44,.35);
+      background: linear-gradient(180deg, rgba(185,4,44,.14), rgba(185,4,44,.06));
+      transition:.15s transform ease, .2s box-shadow ease;
+    }
+    .chip:hover{ transform: translateY(-1px); box-shadow: var(--glow); }
+
+    .row{ display:flex; gap:10px; }
+    textarea{
+      flex:1; height: 96px; resize: vertical;
+      background:#0c0d11; color:var(--ink);
+      border:1px solid var(--outline); border-radius: var(--radius);
+      padding:12px 14px; outline:none; font-family: inherit;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    textarea:focus{
+      border-color: var(--crimson); box-shadow: 0 0 0 3px var(--ring);
+    }
+    button{
+      background: linear-gradient(180deg, var(--crimson), var(--crimson-2));
+      color:white; border:0; padding: 0 18px;
+      border-radius: var(--radius); cursor:pointer;
+      min-width:120px; font-weight:600; letter-spacing:.2px;
+      box-shadow: 0 8px 28px rgba(185,4,44,.25);
+      transition: transform .06s ease-in-out, box-shadow .2s ease;
+    }
+    button:active{ transform: translateY(1px); box-shadow: 0 4px 18px rgba(185,4,44,.2); }
+    button:disabled{ opacity:.65; cursor:not-allowed; }
+
+    .hint{ color:var(--muted); font-size:.92rem; }
+
+    /* Small screens */
+    @media (max-width:640px){
+      .bubble{ max-width: 90%; }
+      button{ min-width: 96px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <div class="crest" aria-hidden="true"></div>
+      <div>
+        <h1>ItachiGPT — Shinobi Coding Tutor</h1>
+        <div class="sub">“Knowledge is the blade; discipline is the edge.”</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="panel" aria-live="polite">
+      <div id="chat" class="chat"></div>
+
+      <div class="composer">
+        <div class="quick" id="quick">
+          <div class="chip" data-text="Explain Big-O">Explain Big-O</div>
+          <div class="chip" data-text="Variations 3 two-pointer arrays">Variations 3 two-pointer arrays</div>
+          <div class="chip" data-text="Make a game for learning RECURSION">Make a game for learning RECURSION</div>
+          <div class="chip" data-text="menu">menu</div>
+        </div>
+
+        <div class="row">
+          <textarea id="input" placeholder="Speak, genin… (⌘/Ctrl + Enter to send)"></textarea>
+          <button id="send" title="Send">Send</button>
+        </div>
+        <div class="hint">
+          Try: <code>Make a game for learning RECURSION</code> •
+          <code>Variations 3 binary search</code> •
+          <code>Explain hash maps</code>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const chatEl   = document.querySelector('#chat');
+    const inputEl  = document.querySelector('#input');
+    const sendBtn  = document.querySelector('#send');
+    const quickEl  = document.querySelector('#quick');
+
+    const history = []; // client-side demo memory
+
+    function bubble(text, who='assistant'){
+      const el = document.createElement('div');
+      el.className = 'bubble ' + (who === 'user' ? 'user' : 'assistant');
+      if (who === 'assistant' && !text.startsWith('ItachiGPT')) {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.textContent = 'ItachiGPT';
+        el.appendChild(tag);
+      }
+      el.appendChild(document.createTextNode(text));
+      chatEl.appendChild(el);
+      el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    async function greet(){
+      // Ask backend to honor the system prompt for the first line
+      try{
+        const r = await fetch('/api/chat', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ history, userMessage: '' })
+        });
+        const { reply } = await r.json();
+        bubble(
+          reply || "Genin, I am ItachiGPT. What is it you seek to learn?\n- Variations NUMBER TOPIC\n- Make a game for learning TOPIC\n- Explain TOPIC"
+        );
+      }catch{
+        bubble("Genin, I am ItachiGPT. What is it you seek to learn?\n- Variations NUMBER TOPIC\n- Make a game for learning TOPIC\n- Explain TOPIC");
+      }
+    }
+
+    async function send(){
+      const text = inputEl.value.trim();
+      if(!text) return;
+
+      bubble(text, 'user');
+      sendBtn.disabled = true;
+      history.push({ role:'user', content:text });
+
+      // show a tiny “thinking” message
+      const thinking = document.createElement('div');
+      thinking.className = 'bubble assistant';
+      thinking.textContent = "…";
+      chatEl.appendChild(thinking);
+      thinking.scrollIntoView({ behavior:'smooth', block:'end' });
+
+      try{
+        const r = await fetch('/api/chat', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ history, userMessage: text })
+        });
+        const data = await r.json();
+        thinking.remove();
+        const reply = data.reply || '(no reply)';
+        bubble(reply, 'assistant');
+        history.push({ role:'assistant', content: reply });
+      }catch(e){
+        thinking.remove();
+        bubble('A shadow crossed our path (network error). Try again.', 'assistant');
+      }finally{
+        inputEl.value = ''; sendBtn.disabled = false; inputEl.focus();
+      }
+    }
+
+    // Quick chips
+    quickEl.addEventListener('click', (e)=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      inputEl.value = chip.getAttribute('data-text') || '';
+      inputEl.focus();
+    });
+
+    inputEl.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send();
+    });
+    sendBtn.addEventListener('click', send);
+
+    // Boot
+    greet();
+  </script>
+</body>
+</html>
